@@ -8,15 +8,17 @@ datasource db {
 }
 
 model Document {
-  id           String   @id(map: "PK_ac51aa5181ee2036f5ca482857c") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  filename     String   @db.VarChar
-  originalName String   @db.VarChar
-  mimeType     String   @db.VarChar
+  id           String   @id @default(uuid())
+  filename     String
+  originalName String
+  mimeType     String
   size         Int
-  path         String   @db.VarChar
-  metadata     Json     @default("{}")
-  createdAt    DateTime @default(now()) @db.Timestamp(6)
-  updatedAt    DateTime @default(now()) @updatedAt @db.Timestamp(6)
+  path         String
+  publicId     String?  @map("public_id")
+  fileType     String
+  metadata     Json
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@map("documents")
 }
