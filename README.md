@@ -13,3 +13,21 @@ npm install @prisma/client --save
 
 # Initialiser Prisma dans votre projet
 npx prisma init
+
+# Générer les fichiers de migration
+npx prisma migrate dev --name init
+
+# Générer le client Prisma
+npx prisma generate
+
+# Générer le module Documents
+nest generate module documents
+
+# Générer le contrôleur Documents
+nest generate controller documents
+
+# Générer le service Documents
+nest generate service documents
+
+
+npm install --save @nestjs/swagger swagger-ui-express
