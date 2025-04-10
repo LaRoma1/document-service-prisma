@@ -11,6 +11,9 @@ import {
     UploadedFile,
     Res,
     HttpStatus,
+    ParseFilePipe,
+    MaxFileSizeValidator,
+    FileTypeValidator,
   } from '@nestjs/common';
   import { FileInterceptor } from '@nestjs/platform-express';
   import { Express, Response } from 'express';
@@ -72,6 +75,12 @@ import {
     })
     size: number;
   
+    @ApiProperty({
+      description: 'ID public du fichier',
+      example: '550e8400-e29b-41d4-a716-446655440000'
+    })
+    publicId: string | null;
+    
     @ApiProperty({
       description: 'Chemin d\'accès au fichier physique',
       example: 'uploads/550e8400-e29b-41d4-a716-446655440000.pdf'
@@ -137,9 +146,17 @@ import {
         }
       }
     })
-    @UseInterceptors(FileInterceptor('file', { storage }))
+    @UseInterceptors(FileInterceptor('file'))
     async create(
-      @UploadedFile() file: Express.Multer.File,
+      @UploadedFile(
+        new ParseFilePipe({
+          validators: [
+            new MaxFileSizeValidator({ maxSize: 10000000 }), // 10MB
+            new FileTypeValidator({ fileType: /(jpg|jpeg|png|pdf)$/ }),
+          ],
+        }),
+      )
+      file: Express.Multer.File,
       @Body() createDocumentDto: CreateDocumentDto,
     ) {
       return this.documentsService.create(file, createDocumentDto);

@@ -14,8 +14,11 @@ model Document {
   mimeType     String
   size         Int
   path         String
+  publicId     String?  @map("public_id")
   fileType     String
-  metadata     Json?
+  metadata     Json
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@map("documents")
 }

@@ -4,9 +4,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
+import { v4 as uuidv4 } from 'uuid';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import { Document } from '@prisma/client';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 const unlinkAsync = promisify(fs.unlink);
 const existsAsync = promisify(fs.exists);
@@ -16,7 +18,10 @@ const mkdirAsync = promisify(fs.mkdir);
 export class DocumentsService {
   private readonly uploadDir = path.join(process.cwd(), 'uploads');
 
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    private cloudinaryService: CloudinaryService,
+  ) {
     this.ensureUploadDirExists();
   }
 
@@ -30,20 +35,16 @@ export class DocumentsService {
     file: Express.Multer.File,
     createDocumentDto: CreateDocumentDto
   ): Promise<Document> {
-    const fileExtension = path.extname(file.originalname);
-    const newFilename = `${createDocumentDto.fileName}${fileExtension}`;
-    const newPath = path.join(this.uploadDir, newFilename);
-
-    // Déplacer le fichier vers le nouveau chemin avec le nom souhaité
-    await fs.promises.rename(file.path, newPath);
+    const { url, public_id } = await this.cloudinaryService.uploadFile(file);
 
     return this.prisma.document.create({
       data: {
-        filename: newFilename,
+        filename: createDocumentDto.fileName,
         originalName: file.originalname,
         mimeType: file.mimetype,
         size: file.size,
-        path: newPath,
+        path: url,
+        publicId: public_id,
         fileType: createDocumentDto.fileType,
         metadata: createDocumentDto.metadata || {},
       },
@@ -95,9 +96,8 @@ export class DocumentsService {
   async remove(id: string): Promise<void> {
     const document = await this.findOne(id);
     
-    // Supprimer le fichier physiquement
-    if (await existsAsync(document.path)) {
-      await unlinkAsync(document.path);
+    if (document.publicId) {
+      await this.cloudinaryService.deleteFile(document.publicId);
     }
     
     await this.prisma.document.delete({
